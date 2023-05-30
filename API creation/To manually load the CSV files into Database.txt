@@ -1,0 +1,42 @@
+To manually load the CSV files into a SQLite database before running the generate_report() function, you can follow these steps:
+
+1. Make sure you have SQLite installed on your system. If not, you can download it from the official SQLite website: https://www.sqlite.org/download.html
+
+2. Open a command prompt or terminal and navigate to the directory where your CSV files and the Python script (app.py or any other name you used) are located.
+
+3. Launch the SQLite command-line interface by executing the following command:
+
+    sqlite3 store.db ##code
+
+This will create or connect to a SQLite database file named store.db.
+
+4. Once you are in the SQLite command-line interface, run the following commands to create the necessary tables for the CSV data:
+
+
+CREATE TABLE store_status (
+    store_id INTEGER,
+    timestamp_utc TEXT,
+    status TEXT
+);
+
+CREATE TABLE store_hours (
+    store_id INTEGER,
+    dayOfWeek INTEGER,
+    start_time_local TEXT,
+    end_time_local TEXT
+);
+
+CREATE TABLE store_timezone (
+    store_id INTEGER,
+    timezone_str TEXT
+);
+
+These commands create tables that match the schema of the CSV files.
+
+5. Exit the SQLite command-line interface by typing .exit and pressing Enter.
+
+6. Now, you can run the Python script (app.py or any other name you used) that contains the load_csv_to_db() function. The function will read the CSV files and insert the data into the corresponding tables in the store.db SQLite database.
+
+  load_csv_to_db()##code
+
+This will load the CSV data into the SQLite database, and you can proceed to run the generate_report() function to generate the report based on the loaded data.

@@ -1,0 +1,107 @@
+Now, we have set up the Flask application, defined the routes, and loaded the CSV files into the database. 
+Next, we'll implement the report generation logic based on the provided data sources.
+
+
+Report generation logic by loading the CSV files in to the Database:
+
+import pandas as pd
+from sqlalchemy import create_engine
+from datetime import datetime, timedelta
+import pytz
+
+# Load CSV files into a SQLite database
+def load_csv_to_db():
+    engine = create_engine('sqlite:///store.db', echo=False)
+    store_status_df = pd.read_csv('store_status.csv')
+    store_status_df.to_sql('store_status', con=engine, if_exists='replace', index=False)
+
+    store_hours_df = pd.read_csv('store_hours.csv')
+    store_hours_df.to_sql('store_hours', con=engine, if_exists='replace', index=False)
+
+    store_timezone_df = pd.read_csv('store_timezone.csv')
+    store_timezone_df.to_sql('store_timezone', con=engine, if_exists='replace', index=False)
+
+# Helper function to convert local time to UTC time
+def convert_local_to_utc(local_time, timezone_str):
+    timezone = pytz.timezone(timezone_str)
+    local_datetime = datetime.strptime(local_time, '%Y-%m-%d %H:%M:%S')
+    local_datetime = timezone.localize(local_datetime)
+    utc_datetime = local_datetime.astimezone(pytz.utc)
+    return utc_datetime.strftime('%Y-%m-%d %H:%M:%S')
+
+# Helper function to calculate uptime/downtime for a given time range
+def calculate_uptime_downtime(start_time, end_time, store_id, df_status):
+    status_df = df_status[(df_status['timestamp_utc'] >= start_time) & (df_status['timestamp_utc'] < end_time) & (df_status['store_id'] == store_id)]
+    status_count = status_df['status'].value_counts()
+
+    uptime = status_count.get('active', 0)
+    downtime = status_count.get('inactive', 0)
+
+    return uptime, downtime
+
+# Generate report based on the data sources
+def generate_report():
+    engine = create_engine('sqlite:///store.db', echo=False)
+    df_status = pd.read_sql('SELECT * FROM store_status', con=engine)
+    df_hours = pd.read_sql('SELECT * FROM store_hours', con=engine)
+    df_timezone = pd.read_sql('SELECT * FROM store_timezone', con=engine)
+
+    current_timestamp = datetime.utcnow()
+    report_data = []
+
+    for index, row in df_hours.iterrows():
+        store_id = row['store_id']
+        day_of_week = row['dayOfWeek']
+        start_time_local = row['start_time_local']
+        end_time_local = row['end_time_local']
+
+        if store_id in df_timezone['store_id'].values:
+            timezone_str = df_timezone[df_timezone['store_id'] == store_id]['timezone_str'].values[0]
+        else:
+            timezone_str = 'America/Chicago'
+
+        start_time_utc = convert_local_to_utc(start_time_local, timezone_str)
+        end_time_utc = convert_local_to_utc(end_time_local, timezone_str)
+
+        start_time = current_timestamp - timedelta(days=7)
+        end_time = current_timestamp
+
+        uptime = 0
+        downtime = 0
+
+        while start_time < end_time:
+            next_start_time = start_time + timedelta(hours=1)
+            next_end_time = start_time + timedelta(hours=24)
+
+            overlap_start_time = max(start_time_utc, start_time)
+            overlap_end_time = min(end_time_utc, next_end_time)
+
+            if overlap_start_time < overlap_end_time:
+                interval_uptime, interval_downtime = calculate_uptime_downtime(overlap_start_time, overlap_end_time, store_id, df_status)
+                uptime += interval_uptime
+                downtime += interval_downtime
+
+            start_time = next_start_time
+
+        uptime_last_hour = uptime * 60
+        uptime_last_day = uptime * 24
+        uptime_last_week = uptime
+
+        downtime_last_hour = downtime * 60
+        downtime_last_day = downtime * 24
+        downtime_last_week = downtime
+
+        report_data.append([store_id, uptime_last_hour, uptime_last_day, uptime_last_week, downtime_last_hour, downtime_last_day, downtime_last_week])
+
+    report_df = pd.DataFrame(report_data, columns=['store_id', 'uptime_last_hour', 'uptime_last_day', 'uptime_last_week', 'downtime_last_hour', 'downtime_last_day', 'downtime_last_week'])
+    report_csv = report_df.to_csv(index=False)
+
+    return report_csv
+generate_report()
+# Call the function to load CSV data into the database
+load_csv_to_db()
+
+
+The generate_report() function performs the report generation logic based on the provided data sources. 
+It retrieves the relevant data from the database, calculates the uptime and downtime for each store within the specified time range, and stores the results in a report DataFrame. 
+Finally, it converts the report DataFrame to a CSV format.

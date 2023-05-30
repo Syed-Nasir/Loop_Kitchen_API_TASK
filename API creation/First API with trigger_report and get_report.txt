@@ -1,0 +1,75 @@
+To address the problem statement, we will build a backend system using the Flask framework in Python. 
+The system will include two APIs:
+/trigger_report to trigger report generation and /get_report to retrieve the generated report or its status.
+
+To achieve this, we will perform the following steps:
+
+1. Set up a Flask application and define the required routes (/trigger_report and /get_report).
+2. Load the provided CSV files into a relevant database for efficient data retrieval.
+3. Implement the report generation logic based on the provided data sources.
+4. Generate a CSV file containing the report data.
+5. Track the progress of report generation using a unique report_id.
+6. Implement the /trigger_report endpoint to initiate the report generation process and return the report_id.
+7. Implement the /get_report endpoint to retrieve the status of the report or the generated CSV file.
+
+Let's proceed with the implementation.
+
+Let's start by setting up the Flask application and defining the required routes. We'll also load the provided CSV files into a relevant database for efficient data retrieval.
+
+First, make sure you have Flask installed. You can install it using pip:
+
+pip install Flask ###code
+
+Then, create a new Python file (e.g., app.py) and add the following code:
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/trigger_report', methods=['POST'])
+def trigger_report():
+    # Implement report generation logic here
+    pass
+
+@app.route('/get_report', methods=['GET'])
+def get_report():
+if __name__ == '__main__':
+    # Implement report retrieval logic here
+    pass
+
+    app.run()
+
+
+Now, let's load the provided CSV files into a database. We'll use SQLite as the database for simplicity. You can modify this part to use a different database if needed.
+
+First, install the required packages:
+
+
+pip install pandas sqlalchemy  ###code
+
+
+Then, import the necessary modules and modify the code as follows:
+
+import pandas as pd
+from sqlalchemy import create_engine
+
+# Load CSV files into a SQLite database
+def load_csv_to_db():
+    # Load store status data
+    store_status_df = pd.read_csv('store_status.csv')
+    engine = create_engine('sqlite:///store.db', echo=False)
+    store_status_df.to_sql('store_status', con=engine, if_exists='replace', index=False)
+
+    # Load store business hours data
+    store_hours_df = pd.read_csv('store_hours.csv')
+    store_hours_df.to_sql('store_hours', con=engine, if_exists='replace', index=False)
+
+    # Load store timezone data
+    store_timezone_df = pd.read_csv('store_timezone.csv')
+    store_timezone_df.to_sql('store_timezone', con=engine, if_exists='replace', index=False)
+
+# Call the function to load CSV data into the database
+load_csv_to_db()
+
+In this code, we use the pandas library to read the CSV files and then store them in a SQLite database using SQLAlchemy.
+
